@@ -199,9 +199,9 @@
                             <div v-if="!editMode.flight" class="space-y-4">
                                 <div v-for="(label, dir) in {outbound: '去程', inbound: '回程'}" :key="dir">
                                     <div class="font-bold text-baby-blue-dark border-b mb-1">{{ label === 'outbound' ? '去程' : '回程' }}</div>
-                                    <p class="text-xl font-bold text-gray-800">{{ flights[dir].airline }} - {{ flights[dir].number }}</p>
+                                    <p class="text-lg font-bold text-gray-800">{{ flights[dir].airline }} - {{ flights[dir].number }}</p>
                                     <p class="font-bold text-gray-800 text-sm">{{ flights[dir].time.replace('T', ' ') }}</p>
-                                    <p class="text-xl font-bold text-gray-800 mt-2">行李資訊: {{ flights[dir].baggageInfo || '無紀錄' }}</p>
+                                    <p class="text-lg font-bold text-gray-800 mt-2">行李資訊: {{ flights[dir].baggageInfo || '無紀錄' }}</p>
                                     <div v-if="flights[dir].attachmentName" class="text-xs text-baby-blue mt-1">
                                         <i class="fa-solid fa-file-alt"></i> {{ flights[dir].attachmentName }}
                                     </div>
