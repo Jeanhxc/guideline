@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <link rel="apple-touch-icon" href="icon.png">
@@ -207,7 +207,6 @@
                                     </div>
                                 </div>
                             </div>
-        
                             <!-- 編輯模式 -->
                             <div v-else class="space-y-4">
                                 <div v-for="(dir, label) in {outbound: '去程', inbound: '回程'}" :key="dir" class="bg-gray-50 p-3 rounded border">
@@ -244,7 +243,6 @@
                                         {{ hotel.name }}
                                     </a>
                                 </h4>
-                                <!-- 地址加入了 Google Map 連結 -->
                                 <p class="text-sm text-gray-600 mt-1">
                                     <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(hotel.address)" target="_blank" class="hover:text-blue-500 transition-colors flex items-start gap-1">
                                         <i class="fa-solid fa-location-dot text-red-400 mt-1"></i>
@@ -309,7 +307,6 @@
                     
                     <div v-if="showAddShopping" class="bg-gray-50 p-3 rounded-lg border">
                         <div class="flex gap-2 mb-2">
-                            <!-- 支援Base64儲存的圖片上傳 -->
                             <label class="w-20 h-20 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 cursor-pointer bg-white relative overflow-hidden flex-shrink-0">
                                 <template v-if="!newShopForm.image">
                                     <i class="fa-solid fa-camera mb-1"></i><span class="text-[10px]">照片</span>
@@ -422,7 +419,6 @@
                 const currentTab = useLocalStorage('osaka_tab', 'schedule');
                 const activeDay = useLocalStorage('osaka_day', 1);
                 
-                // 直接修正星期幾，不使用 LocalStorage 綁定，覆蓋即可生效！
                 const days = ref([
                     { id: 1, date: '8/10 (一)' }, 
                     { id: 2, date: '8/11 (二)' }, 
@@ -430,7 +426,6 @@
                     { id: 4, date: '8/13 (四)' }
                 ]);
 
-                // 1. 行程狀態
                 const schedules = useLocalStorage('osaka_schedules_v2', [
                     { id: 1, dayId: 1, time: '08:30', location: '關西機場', note: '出關、拿票券', mapLink: '', weatherIcon: 'fa-solid fa-cloud-sun', temp: 28, lat: 34.4320, lng: 135.2304 },
                     { id: 2, dayId: 1, time: '11:30', location: '心齋橋大飯店', note: '寄放行李', mapLink: '', weatherIcon: 'fa-solid fa-sun', temp: 30, lat: 34.6723, lng: 135.5003 },
@@ -466,7 +461,6 @@
                 };
                 const deleteSchedule = (id) => { schedules.value = schedules.value.filter(s => s.id !== id); if(currentTab.value === 'map') updateMapMarkers(); };
 
-                // 2. 準備區
                 const prepOrder = useLocalStorage('osaka_prepOrder', ['flight', 'hotel', 'tasks', 'baggage', 'wishlist']);
                 
                 const moveSection = (index, direction) => {
@@ -493,7 +487,6 @@
                 const addBaggage = () => { if(newBaggageName.value) { baggage.value.push({ id: Date.now(), name: newBaggageName.value, checked: false }); newBaggageName.value = ''; }};
                 const deleteBaggage = (id) => baggage.value = baggage.value.filter(item => item.id !== id);
 
-                // 更新航班年份至 2026 年
                 const flights = useLocalStorage('osaka_flights_v2', { 
                     outbound: { airline: 'AirAsia 亞洲航空 ', number: 'RLZBHR', time: '2026-08-10T08:40', baggageInfo: '', attachmentName: null },
                     inbound: { airline: 'AirAsia 亞洲航空', number: 'RLZBHR', time: '2026-08-13T20:55', baggageInfo: '', attachmentName: null }
@@ -507,7 +500,6 @@
                 const hotel = useLocalStorage('osaka_hotel', { name: 'JY Suites Tsutenkaku Brand New Spacious Apartment', address: '大阪市浪速区下寺3-17-7, 大阪, 日本, 556-0001', checkIn: '16:00', checkOut: '10:00', transport: '搭乘南海電鐵至難波站...', attachmentName: null });
                 const handleHotelUpload = (e) => { const file = e.target.files[0]; if(file) hotel.value.attachmentName = file.name; };
 
-                // 3. 購物清單
                 const activeBuyer = useLocalStorage('osaka_buyer', 'me');
                 const buyers = ref([{ id: 'me', name: '我的' }, { id: 'family', name: '家人' }, { id: 'sister', name: '姊姊' }, { id: 'yuching', name: '毓清姊姊' }]);
                 const currentBuyerName = computed(() => buyers.value.find(b => b.id === activeBuyer.value).name);
@@ -535,7 +527,6 @@
                 };
                 const deleteShopping = (id) => shoppingList.value = shoppingList.value.filter(s => s.id !== id);
 
-                // 4. 分帳與匯率
                 const exchangeRate = useLocalStorage('osaka_exchangeRate', 0.215);
                 const familyTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'family').reduce((sum, i) => sum + i.price, 0));
                 const sisterTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'sister').reduce((sum, i) => sum + i.price, 0));
@@ -543,7 +534,6 @@
                 const totalSplitAmount = computed(() => familyTotal.value + sisterTotal.value + yuChingTotal.value);
                 const totalTWD = computed(() => Math.round(totalSplitAmount.value * exchangeRate.value));
 
-                // 5. 地圖邏輯
                 let map = null;
                 let markers = [];
                 let userMarker = null;
@@ -606,7 +596,7 @@
                     activeBuyer, buyers, currentBuyerName, filteredShoppingList,
                     showAddShopping, newShopForm, handleShopImageUpload, saveShopping, deleteShopping,
                     exchangeRate, familyTotal, sisterTotal, yuChingTotal, totalSplitAmount, totalTWD,
-                    locateMe
+                    locateMe, handleFlightUpload
                 }
             }
         }).mount('#app')
