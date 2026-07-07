@@ -498,7 +498,14 @@
                 const remoteDocExists = ref(false);
                 const currentTab = ref('schedule');
                 const activeDay = ref(1);
-                const isAdmin = computed(() => currentUser.value && currentUser.value.email === ADMIN_EMAIL);
+                const isAdmin = computed(() => 
+                    const loginEmail = currentUser.value?.email?.trim().toLowerCase();
+                const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
+                console.log("目前登入 Email：", loginEmail);
+                console.log("管理員 Email：", adminEmail);
+                console.log("是否為管理員：", loginEmail === adminEmail);
+                return loginEmail === adminEmail;
+            });
 
                 const loginWithGoogle = async () => {
                     try {
@@ -739,12 +746,21 @@
                 window.firebaseOnAuthStateChanged(window.firebaseAuth, async (user) => {
                     currentUser.value = user;
                     authReady.value = true;
-                    if (user && user.email !== ADMIN_EMAIL) {
-                        alert("這個帳號不是管理員帳號，目前仍是唯讀模式。");
-                    }
-                    if (user && user.email === ADMIN_EMAIL && dataReady.value && !remoteDocExists.value) {
-                        await saveCloudNow();
-                    }
+                    const loginEmail = user?.email?.trim().toLowerCase();
+                    const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
+                    
+                    console.log("Firebase 登入帳號：", loginEmail);
+                    console.log("設定的管理員帳號：", adminEmail);
+                    console.log("管理員判定結果：", loginEmail === adminEmail);
+                    if (user && loginEmail !== adminEmail) {
+                        alert("這個帳號不是管理員帳號，目前仍是唯讀模式。");}
+                    if (user && 
+                        loginEmail === adminEmail && 
+                        dataReady.value &&
+                        !remoteDocExists.value
+                       ) {
+                            await saveCloudNow();
+                        }
                 });
 
                 window.firebaseOnSnapshot(window.osakaTripDocRef, async (snapshot) => {
