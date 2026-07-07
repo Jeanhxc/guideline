@@ -6,7 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大阪旅遊指南</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -15,20 +14,9 @@
             }
         }
     </script>
-    <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-
-    import {
-        getAuth,
-        GoogleAuthProvider,
-        signInWithRedirect,
-        getRedirectResult,
-        signOut,
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
     import {
         getFirestore,
         doc,
@@ -46,25 +34,14 @@
     };
 
     const firebaseApp = initializeApp(firebaseConfig);
-    const auth = getAuth(firebaseApp);
     const db = getFirestore(firebaseApp);
-    const provider = new GoogleAuthProvider();
 
-    window.firebaseAuth = auth;
-    window.googleProvider = provider;
-    window.firebaseSignInWithRedirect = signInWithRedirect;
-    window.firebaseGetRedirectResult = getRedirectResult;
-    window.firebaseSignOut = signOut;
-    window.firebaseOnAuthStateChanged = onAuthStateChanged;
     window.firebaseOnSnapshot = onSnapshot;
     window.firebaseSetDoc = setDoc;
     window.osakaTripDocRef = doc(db, "osakaTrip", "main");
 </script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -77,25 +54,23 @@
 </head>
 <body>
     <div id="app" class="app-container pb-20">
-        <!-- 讀取狀態 -->
-        <div v-if="!authReady || !dataReady" class="min-h-screen flex flex-col items-center justify-center p-6">
+        <div v-if="!dataReady" class="min-h-screen flex flex-col items-center justify-center p-6">
             <h1 class="text-3xl font-bold text-baby-blue-dark mb-3">OSAKA TRIP</h1>
             <p class="text-gray-400 text-sm">資料讀取中...</p>
         </div>
 
         <template v-else>
-        <!-- 頂部導航 -->
         <header class="bg-baby-blue-light text-baby-blue-dark p-4 sticky top-0 z-20 flex justify-between items-center shadow-sm">
             <div>
                 <h1 class="text-xl font-bold tracking-wider">OSAKA TRIP</h1>
                 <p class="text-[10px] text-gray-500">{{ isAdmin ? '管理員模式' : '訪客唯讀模式' }}</p>
             </div>
             <div class="flex gap-2 items-center">
-                <button v-if="!currentUser" @click="loginWithGoogle" class="text-xs border border-baby-blue-dark px-2 py-1 rounded hover:bg-baby-blue-dark hover:text-white transition-colors">
+                <button v-if="!isAdmin" @click="adminLogin" class="text-xs border border-baby-blue-dark px-2 py-1 rounded hover:bg-baby-blue-dark hover:text-white transition-colors">
                     管理員登入
                 </button>
-                <button v-else @click="logout" class="text-xs border border-baby-blue-dark px-2 py-1 rounded hover:bg-baby-blue-dark hover:text-white transition-colors">
-                    登出
+                <button v-else @click="adminLogout" class="text-xs border border-baby-blue-dark px-2 py-1 rounded hover:bg-baby-blue-dark hover:text-white transition-colors">
+                    退出管理員
                 </button>
                 <button v-if="isAdmin" @click="clearData" class="text-xs border border-red-300 text-red-400 px-2 py-1 rounded hover:bg-red-400 hover:text-white transition-colors">
                     清除資料
@@ -105,7 +80,6 @@
 
         <main class="p-4 relative">
             
-            <!-- ================= 1. 行程表 ================= -->
             <section v-show="currentTab === 'schedule'" class="fade-in">
                 <div class="flex overflow-x-auto no-scrollbar gap-3 mb-6 pb-2 border-b">
                     <button v-for="day in days" :key="day.id" @click="activeDay = day.id"
@@ -118,7 +92,6 @@
                 <div class="space-y-4">
                     <div v-for="(item, index) in currentSchedule" :key="item.id" class="bg-white border border-baby-blue-light rounded-xl p-4 shadow-sm relative">
                         
-                        <!-- 編輯模式 -->
                         <div v-if="editingScheduleId === item.id" class="space-y-2 mt-1">
                             <input type="time" v-model="editScheduleForm.time" class="w-full p-2 rounded border text-sm">
                             <input type="text" v-model="editScheduleForm.location" placeholder="地點名稱" class="w-full p-2 rounded border text-sm">
@@ -130,7 +103,6 @@
                             </div>
                         </div>
 
-                        <!-- 檢視模式 -->
                         <div v-else>
                             <button v-if="isAdmin" @click="startEditSchedule(item)" class="absolute top-3 right-10 text-gray-300 hover:text-baby-blue transition-colors"><i class="fa-solid fa-pen"></i></button>
                             <button v-if="isAdmin" @click="deleteSchedule(item.id)" class="absolute top-3 right-3 text-red-300 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash"></i></button>
@@ -169,12 +141,10 @@
                 </div>
             </section>
 
-            <!-- ================= 2. 準備區 ================= -->
             <section v-show="currentTab === 'prep'">
                 
                 <template v-for="(section, index) in prepOrder" :key="section">
                     
-                    <!-- 願望清單 -->
                     <div v-if="section === 'wishlist'" class="mb-5 bg-white border border-baby-blue-light rounded-xl shadow-sm overflow-hidden transition-all duration-300">
                         <div class="bg-baby-blue-light px-4 py-2 flex justify-between items-center">
                             <h3 class="font-bold text-baby-blue-dark"><i class="fa-solid fa-star"></i> 願望清單</h3>
@@ -188,14 +158,13 @@
                                 <span class="text-gray-800 font-medium text-sm"><i class="fa-solid fa-location-dot text-baby-blue mr-2"></i>{{ spot.name }}</span>
                                 <button v-if="isAdmin" @click="deleteWishlist(spot.id)" class="text-red-300 text-xs px-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <div class="flex gap-2 mt-2 pt-2 border-t">
+                            <div v-if="isAdmin" class="flex gap-2 mt-2 pt-2 border-t">
                                 <input type="text" v-model="newWishlistName" placeholder="新增想去的景點..." class="flex-1 p-2 border rounded text-sm">
-                                <button v-if="isAdmin" @click="addWishlist" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
+                                <button @click="addWishlist" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 行前準備事項 -->
                     <div v-if="section === 'tasks'" class="mb-5 bg-white border border-baby-blue-light rounded-xl shadow-sm overflow-hidden transition-all duration-300">
                         <div class="bg-baby-blue-light px-4 py-2 flex justify-between items-center">
                             <h3 class="font-bold text-baby-blue-dark"><i class="fa-solid fa-list-check"></i> 行前準備事項</h3>
@@ -212,14 +181,13 @@
                                 </label>
                                 <button v-if="isAdmin" @click="deletePrepTask(task.id)" class="text-red-300 text-xs px-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <div class="flex gap-2 mt-2 pt-2 border-t">
+                            <div v-if="isAdmin" class="flex gap-2 mt-2 pt-2 border-t">
                                 <input type="text" v-model="newPrepTaskName" placeholder="新增行前任務..." class="flex-1 p-2 border rounded text-sm">
-                                <button v-if="isAdmin" @click="addPrepTask" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
+                                <button @click="addPrepTask" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 行李打包清單 -->
                     <div v-if="section === 'baggage'" class="mb-5 bg-white border border-baby-blue-light rounded-xl shadow-sm overflow-hidden transition-all duration-300">
                         <div class="bg-baby-blue-light px-4 py-2 flex justify-between items-center">
                             <h3 class="font-bold text-baby-blue-dark"><i class="fa-solid fa-suitcase"></i> 行李打包清單</h3>
@@ -236,19 +204,18 @@
                                 </label>
                                 <button v-if="isAdmin" @click="deleteBaggage(item.id)" class="text-red-300 text-xs px-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <div class="flex gap-2 mt-2 pt-2 border-t">
+                            <div v-if="isAdmin" class="flex gap-2 mt-2 pt-2 border-t">
                                 <input type="text" v-model="newBaggageName" placeholder="新增行李項目..." class="flex-1 p-2 border rounded text-sm">
-                                <button v-if="isAdmin" @click="addBaggage" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
+                                <button @click="addBaggage" class="bg-baby-blue text-white px-3 py-1 rounded text-sm">新增</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 航班資訊 (分為去程與回程) -->
                     <div v-if="section === 'flight'" class="mb-5 bg-white border border-baby-blue-light rounded-xl shadow-sm overflow-hidden transition-all duration-300">
                         <div class="bg-baby-blue-light px-4 py-2 flex justify-between items-center">
                             <h3 class="font-bold text-baby-blue-dark"><i class="fa-solid fa-plane"></i> 航班資訊</h3>
                             <div class="flex items-center gap-4">
-                                <button v-if="isAdmin" @click="editMode.flight = !editMode.flight" class="text-xs bg-white px-2 py-1 rounded shadow-sm">{{ editMode.flight ? '完成' : '編輯' }}</button>
+                                <button v-if="isAdmin" @click="toggleFlightEdit()" class="text-xs bg-white px-2 py-1 rounded shadow-sm">{{ editMode.flight ? '完成' : '編輯' }}</button>
                                 <div class="flex gap-3 text-baby-blue-dark">
                                     <button v-if="isAdmin" @click="moveSection(index, -1)" :class="{'opacity-30 cursor-not-allowed': index === 0}"><i class="fa-solid fa-circle-up"></i></button>
                                     <button v-if="isAdmin" @click="moveSection(index, 1)" :class="{'opacity-30 cursor-not-allowed': index === prepOrder.length - 1}"><i class="fa-solid fa-circle-down"></i></button>
@@ -256,7 +223,6 @@
                             </div>
                         </div>
                         <div class="p-4 space-y-4">
-                            <!-- 檢視模式 -->
                             <div v-if="!editMode.flight" class="space-y-4">
                                 <div v-for="(label, dir) in {outbound: '去程', inbound: '回程'}" :key="dir">
                                     <div class="mt-1 font-bold text-baby-blue-dark border-b mb-2 text-xl">{{ label }}</div>
@@ -271,7 +237,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- 編輯模式 -->
                             <div v-else class="space-y-4">
                                 <div v-for="(label, dir) in {outbound: '去程', inbound: '回程'}" :key="dir" class="bg-gray-50 p-3 rounded border">
                                     <div class="font-bold text-sm mb-2">{{ label === 'outbound' ? '去程編輯' : '回程編輯' }}</div>
@@ -288,12 +253,11 @@
                         </div>
                     </div>
 
-                    <!-- 住宿資訊 -->
                     <div v-if="section === 'hotel'" class="mb-5 bg-white border border-baby-blue-light rounded-xl shadow-sm overflow-hidden transition-all duration-300">
                         <div class="bg-baby-blue-light px-4 py-2 flex justify-between items-center">
                             <h3 class="font-bold text-baby-blue-dark"><i class="fa-solid fa-bed"></i> 住宿資訊</h3>
                             <div class="flex items-center gap-4 text-baby-blue-dark">
-                                <button v-if="isAdmin" @click="editMode.hotel = !editMode.hotel" class="text-xs bg-white px-2 py-1 rounded shadow-sm">{{ editMode.hotel ? '完成' : '編輯' }}</button>
+                                <button v-if="isAdmin" @click="toggleHotelEdit()" class="text-xs bg-white px-2 py-1 rounded shadow-sm">{{ editMode.hotel ? '完成' : '編輯' }}</button>
                                 <div class="flex gap-3">
                                     <button v-if="isAdmin" @click="moveSection(index, -1)" :class="{'opacity-30 cursor-not-allowed': index === 0}"><i class="fa-solid fa-circle-up"></i></button>
                                     <button v-if="isAdmin" @click="moveSection(index, 1)" :class="{'opacity-30 cursor-not-allowed': index === prepOrder.length - 1}"><i class="fa-solid fa-circle-down"></i></button>
@@ -343,7 +307,6 @@
                 </template>
             </section>
 
-            <!-- ================= 3. 購物清單 ================= -->
             <section v-show="currentTab === 'shopping'">
                 <div class="flex overflow-x-auto gap-2 mb-4 pb-1 no-scrollbar">
                     <button v-for="person in buyers" :key="person.id" @click="activeBuyer = person.id"
@@ -354,18 +317,46 @@
                 </div>
 
                 <div class="space-y-3">
-                    <div v-for="item in filteredShoppingList" :key="item.id" class="flex justify-between items-center bg-white p-3 rounded-lg border shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" v-model="item.checked" :disabled="!isAdmin" class="accent-baby-blue w-4 h-4 flex-shrink-0 disabled:opacity-50">
-                            <img v-if="item.image" :src="item.image" class="w-10 h-10 object-cover rounded shadow-sm border border-gray-100">
-                            <div v-else class="w-10 h-10 bg-gray-50 rounded flex items-center justify-center border border-gray-100 text-gray-300">
-                                <i class="fa-solid fa-image"></i>
+                    <div v-for="item in filteredShoppingList" :key="item.id" class="flex flex-col bg-white p-3 rounded-lg border shadow-sm mb-2">
+                        <div v-if="editingShoppingId === item.id" class="flex flex-col gap-2 w-full">
+                            <div class="flex gap-2">
+                                 <label class="w-16 h-16 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 cursor-pointer bg-white relative overflow-hidden flex-shrink-0">
+                                     <template v-if="!editShoppingForm.image">
+                                         <i class="fa-solid fa-camera mb-1"></i><span class="text-[10px]">照片</span>
+                                     </template>
+                                     <template v-else>
+                                         <img :src="editShoppingForm.image" class="w-full h-full object-cover">
+                                         <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-[10px] opacity-0 hover:opacity-100 transition-opacity">更換</div>
+                                     </template>
+                                     <input type="file" accept="image/*" class="hidden" @change="handleEditShopImageUpload">
+                                 </label>
+                                 <div class="flex-1 flex flex-col gap-2">
+                                     <input type="text" v-model="editShoppingForm.item" placeholder="商品名稱" class="w-full p-2 rounded border text-sm h-8">
+                                     <input type="text" v-model="editShoppingForm.price" placeholder="價格 (自由填寫)" class="w-full p-2 rounded border text-sm h-8">
+                                 </div>
                             </div>
-                            <span :class="{'line-through text-gray-400': item.checked}" class="text-gray-800 font-medium text-sm">{{ item.item }}</span>
+                            <div class="flex gap-2 pt-1 justify-end">
+                                 <button @click="saveEditShopping" class="flex-1 bg-baby-blue text-white py-1.5 rounded text-sm font-medium">完成</button>
+                                 <button @click="cancelEditShopping" class="flex-1 bg-gray-200 text-gray-600 py-1.5 rounded text-sm font-medium">取消</button>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-bold text-gray-600">¥{{ item.price }}</span>
-                            <button v-if="isAdmin" @click="deleteShopping(item.id)" class="text-red-300 text-xs"><i class="fa-solid fa-xmark"></i></button>
+
+                        <div v-else class="flex justify-between items-center w-full">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" v-model="item.checked" :disabled="!isAdmin" class="accent-baby-blue w-4 h-4 flex-shrink-0 disabled:opacity-50">
+                                <img v-if="item.image" :src="item.image" class="w-10 h-10 object-cover rounded shadow-sm border border-gray-100">
+                                <div v-else class="w-10 h-10 bg-gray-50 rounded flex items-center justify-center border border-gray-100 text-gray-300">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+                                <span :class="{'line-through text-gray-400': item.checked}" class="text-gray-800 font-medium text-sm">{{ item.item }}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-bold text-gray-600">{{ item.price ? '¥' + item.price : '' }}</span>
+                                <div v-if="isAdmin" class="flex items-center gap-2">
+                                    <button @click="startEditShopping(item)" class="text-gray-300 hover:text-baby-blue transition-colors text-xs"><i class="fa-solid fa-pen"></i></button>
+                                    <button @click="deleteShopping(item.id)" class="text-red-300 hover:text-red-500 transition-colors text-xs"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -383,7 +374,7 @@
                             </label>
                             <div class="flex-1 flex flex-col gap-2">
                                 <input type="text" v-model="newShopForm.item" placeholder="商品名稱" class="w-full p-2 rounded border text-sm h-9">
-                                <input type="number" v-model="newShopForm.price" placeholder="日幣金額 (¥)" class="w-full p-2 rounded border text-sm h-9">
+                                <input type="text" v-model="newShopForm.price" placeholder="價格 (自由填寫，例如: 1200, 待確認)" class="w-full p-2 rounded border text-sm h-9">
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -398,7 +389,6 @@
                 </div>
             </section>
 
-            <!-- ================= 4. 分帳系統 ================= -->
             <section v-show="currentTab === 'split'">
                 <div class="bg-white p-4 rounded-xl shadow-sm border mb-4 flex justify-between items-center">
                     <div class="flex items-center gap-2 text-baby-blue-dark"><i class="fa-solid fa-money-bill-transfer"></i><span class="font-bold">當前匯率</span></div>
@@ -432,7 +422,6 @@
             </section>
         </main>
 
-        <!-- ================= 5. 地圖系統 ================= -->
         <section v-show="currentTab === 'map'" class="absolute top-[68px] bottom-[72px] w-full bg-gray-100 z-10">
             <div id="map"></div>
             <div class="absolute bottom-4 left-4 right-4 z-[400] bg-white p-3 rounded-xl shadow-lg border border-baby-blue-light">
@@ -446,7 +435,6 @@
             </div>
         </section>
 
-        <!-- 底部導航列 -->
         <nav class="fixed bottom-0 w-full max-w-[414px] bg-white border-t flex justify-around p-3 pb-safe shadow-[0_-5px_10px_rgba(0,0,0,0.05)] z-20">
             <button @click="switchTab('schedule')" :class="currentTab === 'schedule' ? 'text-baby-blue-dark' : 'text-gray-400'" class="flex flex-col items-center gap-1 w-16">
                 <i class="fa-solid fa-calendar-days text-xl"></i><span class="text-[10px]">行程</span>
@@ -484,47 +472,37 @@
         }
 
         async function startApp() {
-        while (!window.firebaseAuth || !window.firebaseOnSnapshot || !window.osakaTripDocRef) {
+        while (!window.firebaseOnSnapshot || !window.osakaTripDocRef) {
             await new Promise(resolve => setTimeout(resolve, 20));
         }
 
         createApp({
             setup() {
-                const ADMIN_EMAIL = "tpes001227@yahoo.com.tw";
-                const currentUser = ref(null);
-                const authReady = ref(false);
+                const ADMIN_PASSWORD = "cl38";
+                const isAdmin = ref(false);
                 const dataReady = ref(false);
                 const dataLoadedFromCloud = ref(false);
                 const remoteDocExists = ref(false);
+                const applyingCloudData = ref(false);
                 const currentTab = ref('schedule');
                 const activeDay = ref(1);
-                const isAdmin = computed(() => 
-                    const loginEmail = currentUser.value?.email?.trim().toLowerCase();
-                const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
-                console.log("目前登入 Email：", loginEmail);
-                console.log("管理員 Email：", adminEmail);
-                console.log("是否為管理員：", loginEmail === adminEmail);
-                return loginEmail === adminEmail;
-            });
 
-                const loginWithGoogle = async () => {
-                    try {
-                        await window.firebaseSignInWithRedirect(
-                            window.firebaseAuth,
-                            window.googleProvider);
-                    } catch (error) {
-                        console.error("Google 登入失敗：", error);
-                        alert("Google 登入失敗：" + error.message);
+                const adminLogin = () => {
+                    const password = prompt("請輸入管理員密碼");
+                    if (password === ADMIN_PASSWORD) {
+                        isAdmin.value = true;
+                    } else if (password !== null) {
+                        alert("密碼錯誤");
                     }
                 };
 
-                const logout = async () => {
-                    await window.firebaseSignOut(window.firebaseAuth);
+                const adminLogout = () => {
+                    isAdmin.value = false;
                 };
 
                 const requireAdmin = () => {
                     if (!isAdmin.value) {
-                        alert("目前是訪客唯讀模式，請用管理員帳號登入後再修改。");
+                        alert("目前是訪客唯讀模式，請用管理員登入後再修改。");
                         return false;
                     }
                     return true;
@@ -582,6 +560,18 @@
                 };
 
                 const editMode = ref({ flight: false, hotel: false });
+
+                const toggleFlightEdit = () => {
+                    if(!requireAdmin()) return;
+                    editMode.value.flight = !editMode.value.flight;
+                    if (!editMode.value.flight) scheduleCloudSave();
+                };
+
+                const toggleHotelEdit = () => {
+                    if(!requireAdmin()) return;
+                    editMode.value.hotel = !editMode.value.hotel;
+                    if (!editMode.value.hotel) scheduleCloudSave();
+                };
                 
                 const wishlist = useLocalStorage('osaka_wishlist', [{ id: 1, name: '通天閣' }, { id: 2, name: '海遊館' }]);
                 const newWishlistName = ref('');
@@ -621,9 +611,41 @@
                 const buyers = ref([{ id: 'me', name: '我的' }, { id: 'family', name: '家人' }, { id: 'sister', name: '姊姊' }, { id: 'yuching', name: '毓清姊姊' }]);
                 const currentBuyerName = computed(() => buyers.value.find(b => b.id === activeBuyer.value).name);
                 
-                const shoppingList = useLocalStorage('osaka_shopping', [{ id: 1, buyerId: 'sister', item: 'EVE止痛藥', price: 1200, checked: false, image: null }, { id: 2, buyerId: 'family', item: '伴手禮餅乾', price: 3000, checked: false, image: null }]);
+                const shoppingList = useLocalStorage('osaka_shopping', [{ id: 1, buyerId: 'sister', item: 'EVE止痛藥', price: '1200', checked: false, image: null }, { id: 2, buyerId: 'family', item: '伴手禮餅乾', price: '3000', checked: false, image: null }]);
                 const showAddShopping = ref(false);
                 const newShopForm = ref({ item: '', price: '', image: null }); 
+
+                const editingShoppingId = ref(null);
+                const editShoppingForm = ref({ item: '', price: '', image: null });
+
+                const startEditShopping = (item) => { 
+                    if(!requireAdmin()) return;  
+                    editingShoppingId.value = item.id; 
+                    editShoppingForm.value = { ...item }; 
+                };
+
+                const handleEditShopImageUpload = (e) => { 
+                    if(!requireAdmin()) return;  
+                    const file = e.target.files[0]; 
+                    if(file) { 
+                        const reader = new FileReader();
+                        reader.onload = (event) => { editShoppingForm.value.image = event.target.result; };
+                        reader.readAsDataURL(file);
+                    }
+                };
+
+                const saveEditShopping = () => { 
+                    if(!requireAdmin()) return; 
+                    if(!editShoppingForm.value.item.trim()) return;
+                    const index = shoppingList.value.findIndex(s => s.id === editingShoppingId.value);
+                    if (index !== -1) shoppingList.value[index] = { ...shoppingList.value[index], ...editShoppingForm.value };
+                    editingShoppingId.value = null;
+                };
+
+                const cancelEditShopping = () => { 
+                    if(!requireAdmin()) return;  
+                    editingShoppingId.value = null; 
+                };
 
                 const handleShopImageUpload = (e) => { if(!requireAdmin()) return;  
                     const file = e.target.files[0]; 
@@ -637,17 +659,31 @@
                 const filteredShoppingList = computed(() => shoppingList.value.filter(item => item.buyerId === activeBuyer.value));
                 
                 const saveShopping = () => { if(!requireAdmin()) return; 
-                    if(!newShopForm.value.item || !newShopForm.value.price) return;
-                    shoppingList.value.push({ id: Date.now(), buyerId: activeBuyer.value, item: newShopForm.value.item, price: Number(newShopForm.value.price), checked: false, image: newShopForm.value.image });
+                    if(!newShopForm.value.item.trim()) return;
+                    shoppingList.value.push({ 
+                        id: Date.now(), 
+                        buyerId: activeBuyer.value, 
+                        item: newShopForm.value.item, 
+                        price: newShopForm.value.price, 
+                        checked: false, 
+                        image: newShopForm.value.image 
+                    });
                     newShopForm.value = { item: '', price: '', image: null }; 
                     showAddShopping.value = false;
                 };
                 const deleteShopping = (id) => { if(!requireAdmin()) return; shoppingList.value = shoppingList.value.filter(s => s.id !== id); };
 
                 const exchangeRate = useLocalStorage('osaka_exchangeRate', 0.215);
-                const familyTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'family').reduce((sum, i) => sum + i.price, 0));
-                const sisterTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'sister').reduce((sum, i) => sum + i.price, 0));
-                const yuChingTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'yuching').reduce((sum, i) => sum + i.price, 0));
+
+                const getNumericPrice = (price) => {
+                    if (!price && price !== 0) return 0;
+                    const value = parseFloat(String(price).replace(/,/g, ''));
+                    return Number.isFinite(value) ? value : 0;
+                };
+
+                const familyTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'family').reduce((sum, i) => sum + getNumericPrice(i.price), 0));
+                const sisterTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'sister').reduce((sum, i) => sum + getNumericPrice(i.price), 0));
+                const yuChingTotal = computed(() => shoppingList.value.filter(i => i.buyerId === 'yuching').reduce((sum, i) => sum + getNumericPrice(i.price), 0));
                 const totalSplitAmount = computed(() => familyTotal.value + sisterTotal.value + yuChingTotal.value);
                 const totalTWD = computed(() => Math.round(totalSplitAmount.value * exchangeRate.value));
 
@@ -738,44 +774,27 @@
                 };
 
                 const scheduleCloudSave = () => {
-                    if (!isAdmin.value || !dataReady.value) return;
+                    if (!isAdmin.value || !dataReady.value || applyingCloudData.value) return;
                     clearTimeout(saveTimer);
                     saveTimer = setTimeout(saveCloudNow, 500);
                 };
 
-                window.firebaseOnAuthStateChanged(window.firebaseAuth, async (user) => {
-                    currentUser.value = user;
-                    authReady.value = true;
-                    const loginEmail = user?.email?.trim().toLowerCase();
-                    const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
-                    
-                    console.log("Firebase 登入帳號：", loginEmail);
-                    console.log("設定的管理員帳號：", adminEmail);
-                    console.log("管理員判定結果：", loginEmail === adminEmail);
-                    if (user && loginEmail !== adminEmail) {
-                        alert("這個帳號不是管理員帳號，目前仍是唯讀模式。");}
-                    if (user && 
-                        loginEmail === adminEmail && 
-                        dataReady.value &&
-                        !remoteDocExists.value
-                       ) {
-                            await saveCloudNow();
-                        }
-                });
-
                 window.firebaseOnSnapshot(window.osakaTripDocRef, async (snapshot) => {
+                    applyingCloudData.value = true;
                     dataReady.value = true;
                     if (snapshot.exists()) {
                         remoteDocExists.value = true;
                         applyCloudData(snapshot.data());
                     } else {
                         remoteDocExists.value = false;
-                        if (isAdmin.value) await saveCloudNow();
                     }
+                    setTimeout(() => {
+                        applyingCloudData.value = false;
+                    }, 100);
                 }, (error) => {
                     dataReady.value = true;
                     console.error("Firestore 讀取失敗：", error);
-                    alert("讀取雲端資料失敗，請確認 Firestore Rules 是否已發布。");
+                    alert("讀取雲端資料失敗，請確認 Firestore 權限設定。");
                 });
 
                 watch(() => ({
@@ -792,7 +811,7 @@
                     exchangeRate: exchangeRate.value
                 }), scheduleCloudSave, { deep: true });
 
-                const clearData = () => { if(!requireAdmin()) return; 
+                const clearData = async () => { if(!requireAdmin()) return; 
                     if(confirm("確定要清除所有旅遊資料嗎？這將會把所有設定恢復到預設狀態！")) {
                         localStorage.clear();
                         schedules.value = [
@@ -803,25 +822,26 @@
                         wishlist.value = [{ id: 1, name: '通天閣' }, { id: 2, name: '海遊館' }];
                         prepTasks.value = [{ id: 1, name: '購買旅遊不便險', checked: true }, { id: 2, name: '兌換日幣', checked: false }];
                         baggage.value = [{ id: 1, name: '護照與影本', checked: true }];
-                        shoppingList.value = [{ id: 1, buyerId: 'sister', item: 'EVE止痛藥', price: 1200, checked: false, image: null }, { id: 2, buyerId: 'family', item: '伴手禮餅乾', price: 3000, checked: false, image: null }];
+                        shoppingList.value = [{ id: 1, buyerId: 'sister', item: 'EVE止痛藥', price: '1200', checked: false, image: null }, { id: 2, buyerId: 'family', item: '伴手禮餅乾', price: '3000', checked: false, image: null }];
                         prepOrder.value = ['flight', 'hotel', 'tasks', 'baggage', 'wishlist'];
                         exchangeRate.value = 0.215;
-                        saveCloudNow();
+                        await saveCloudNow();
                     }
                 };
 
                 return {
-                    currentUser, authReady, dataReady, isAdmin, loginWithGoogle, logout,
+                    dataReady, isAdmin, adminLogin, adminLogout,
                     currentTab, switchTab, clearData,
                     activeDay, days, currentSchedule, showAddSchedule, newForm, saveSchedule, deleteSchedule,
                     editingScheduleId, editScheduleForm, startEditSchedule, saveEditSchedule, cancelEditSchedule,
                     prepOrder, moveSection, 
-                    editMode, flights, hotel, handleHotelUpload,
+                    editMode, toggleFlightEdit, toggleHotelEdit, flights, hotel, handleHotelUpload,
                     wishlist, newWishlistName, addWishlist, deleteWishlist,
                     prepTasks, newPrepTaskName, addPrepTask, deletePrepTask,
                     baggage, newBaggageName, addBaggage, deleteBaggage,
                     activeBuyer, buyers, currentBuyerName, filteredShoppingList,
                     showAddShopping, newShopForm, handleShopImageUpload, saveShopping, deleteShopping,
+                    editingShoppingId, editShoppingForm, startEditShopping, saveEditShopping, cancelEditShopping, handleEditShopImageUpload,
                     exchangeRate, familyTotal, sisterTotal, yuChingTotal, totalSplitAmount, totalTWD,
                     locateMe, handleFlightUpload
                 }
