@@ -23,7 +23,8 @@
     import {
         getAuth,
         GoogleAuthProvider,
-        signInWithPopup,
+        signInWithRedirect,
+        getRedirectResult,
         signOut,
         onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
@@ -51,7 +52,8 @@
 
     window.firebaseAuth = auth;
     window.googleProvider = provider;
-    window.firebaseSignInWithPopup = signInWithPopup;
+    window.firebaseSignInWithRedirect = signInWithRedirect;
+    window.firebaseGetRedirectResult = getRedirectResult;
     window.firebaseSignOut = signOut;
     window.firebaseOnAuthStateChanged = onAuthStateChanged;
     window.firebaseOnSnapshot = onSnapshot;
@@ -500,10 +502,12 @@
 
                 const loginWithGoogle = async () => {
                     try {
-                        await window.firebaseSignInWithPopup(window.firebaseAuth, window.googleProvider);
+                        await window.firebaseSignInWithRedirect(
+                            window.firebaseAuth,
+                            window.googleProvider);
                     } catch (error) {
-                        console.error(error);
-                        alert("登入失敗，請確認這個帳號可使用 Google 登入。");
+                        console.error("Google 登入失敗：", error);
+                        alert("Google 登入失敗：" + error.message);
                     }
                 };
 
