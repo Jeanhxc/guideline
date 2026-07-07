@@ -481,6 +481,11 @@
             return data;
         }
 
+        async function startApp() {
+        while (!window.firebaseAuth || !window.firebaseOnSnapshot || !window.osakaTripDocRef) {
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+
         createApp({
             setup() {
                 const ADMIN_EMAIL = "tpes001227@yahoo.com.tw";
@@ -802,6 +807,9 @@
                 }
             }
         }).mount('#app')
+        }
+
+        startApp();
     </script>
 </body>
 </html>
